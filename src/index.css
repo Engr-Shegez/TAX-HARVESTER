@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+@theme {
+  --color-crypto-dark: #0f172a --color-harvest-blue: #1e40af;
+}
