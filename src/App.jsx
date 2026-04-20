@@ -1,14 +1,17 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  selectedPreHarvestTotals,
   setError,
   setHoldings,
   setLoading,
 } from "./features/harvester/store/harvesterSlice";
+import SummaryCard from "./features/harvester/components/SummaryCard";
 
 const App = () => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.harvester);
+  const preHarvestTotals = useSelector(selectedPreHarvestTotals);
 
   useEffect(() => {
     const loadData = async () => {
@@ -47,6 +50,11 @@ const App = () => {
         {/* Step 4.2: The Two comparison cards */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* placeholder for Pre- harvesting card */}
+          <SummaryCard
+            title="Pre-Harvesting"
+            totals={preHarvestTotals}
+            isDark={true}
+          />
           <div className="h-64 bg-cryptodark rounded-2xl animate-pulse"></div>
           {/* placeholder for After harvesting card */}
           <div className="h-64 bg-harvest-blue rounded-2xl animate-pulse"></div>

@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   holdings: [],
-  selectedIds: {}, //stores the "coin" symbol or a unique Id
+  selectedIds: [], //stores the "coin" symbol or a unique Id
   loading: false,
   error: null,
 };
@@ -12,7 +12,7 @@ const harvesterSlice = createSlice({
   initialState,
   reducers: {
     setHoldings: (state, action) => {
-      state.holdings = action.payloads;
+      state.holdings = action.payload;
       state.loading = false;
     },
     setLoading: (state) => {
@@ -42,22 +42,31 @@ export const selectAllHoldings = (state) => state.harvester.holdings;
 export const selectSelectedIds = (state) => state.harvester.selectedIds;
 
 export const selectedPreHarvestTotals = (state) => {
-  const holdings = state.harvester.holdings;
+  const holdings = state.harvester.holdings || [];
 
-  return holdings.reduice(
+  const totals = holdings.reduce(
     (acc, curr) => {
-      //STCG LOGIC
-      const stGain = curr.stcg.gain;
-      if (stGain > 0) acc.stProfit += stGain;
-      else acc.stLoss += Math.abs(stGain);
+      const stGain = Number(curr?.stcg?.gain) || 0;
+      const ltGain = Number(curr?.ltcg?.gain) || 0;
 
-      //LTCG LOGIC
-      const ltGain = curr.ltcg.gain;
-      if (ltGain > 0) acc.ltProfit += ltGain;
-      else acc.ltLoss += Math.abs(ltGain);
+      acc.stProfit += stGain > 0 ? stGain : 0;
+      acc.stLoss += stGain < 0 ? Math.abs(stGain) : 0;
+
+      acc.ltProfit += ltGain > 0 ? ltGain : 0;
+      acc.ltLoss += ltGain < 0 ? Math.abs(ltGain) : 0;
 
       return acc;
     },
     { stProfit: 0, stLoss: 0, ltProfit: 0, ltLoss: 0 },
   );
+
+  const netST = totals.stProfit - totals.stLoss;
+  const netLT = totals.ltProfit - totals.ltLoss;
+
+  return {
+    ...totals,
+    netST,
+    netLT,
+    realizedGain: netST + netLT,
+  };
 };

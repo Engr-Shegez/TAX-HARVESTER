@@ -1,7 +1,7 @@
 import { formatCurrency } from "../../../utils/formatters";
 
 const SummaryCard = ({ title, totals, isDark = false }) => {
-  const bgColor = isDark ? "bg-crypto-dark" : "bg-harvest-blue";
+  const bgColor = isDark ? "bg-slate-900" : "bg-blue-800";
   const textColor = "text-white";
   const labelColor = "text-slate-400";
 
@@ -16,7 +16,7 @@ const SummaryCard = ({ title, totals, isDark = false }) => {
       <div className="space-y-6">
         {/* Short Term Section */}
         <div>
-          <p className="text-xs font-semibold mb-2 textblue-400">SHORT TERM</p>
+          <p className="text-xs font-semibold mb-2 text-blue-400">SHORT TERM</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className={labelColor + "text-xs"}>Profits</p>
@@ -30,7 +30,7 @@ const SummaryCard = ({ title, totals, isDark = false }) => {
           <div className="mt-2 pt-2 border-t border-white/10">
             <p className={labelColor + "text-xs"}>Net ST Capital Gains</p>
             <p
-              className={`text-lg font-bold ${totals.netSt >= 0 ? "text-green-400" : "text-red-400"}`}
+              className={`text-lg font-bold ${totals.netST >= 0 ? "text-green-400" : "text-red-400"}`}
             >
               {formatCurrency(totals.netST)}
             </p>
