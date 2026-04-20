@@ -400,3 +400,7 @@ const MOCK_HOLDINGS = [
     },
   },
 ];
+
+export const fetchHoldings = async () => {
+  return MOCK_HOLDINGS;
+};
