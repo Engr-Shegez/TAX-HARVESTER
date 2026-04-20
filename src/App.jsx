@@ -27,10 +27,17 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Tax Loss Harvester
-        </h1>
+      <header className="mb-8 ">
+        <div className="flex ">
+          {" "}
+          <h1 className="text-3xl font-bold text-slate-900">
+            Tax Optimization
+          </h1>{" "}
+          <button className="pt-4 text-sm ml-5 text-blue-700 font-semibold border-b">
+            How it works
+          </button>
+        </div>
+
         <p className="text-slate-500">
           Optimize Your crypto tax liability by realizing losses.
         </p>
@@ -39,7 +46,7 @@ const App = () => {
       <main className="max-w-7xl mx-auto space-y-8">
         {/* Step 4.2: The Two comparison cards */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* olaceholder for Pre- harvesting card */}
+          {/* placeholder for Pre- harvesting card */}
           <div className="h-64 bg-cryptodark rounded-2xl animate-pulse"></div>
           {/* placeholder for After harvesting card */}
           <div className="h-64 bg-harvest-blue rounded-2xl animate-pulse"></div>
@@ -47,7 +54,7 @@ const App = () => {
         {/* Step 4.3: The holding Table */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100">
-            <h2 className="text-xl font-semibold">Your Holdings</h2>
+            <h2 className="text-xl font-semibold"> Holdings</h2>
           </div>
           {loading ? (
             <div className="p-10 text-center text-slate-400">
