@@ -4,13 +4,13 @@ A React-based prototype for simulating crypto tax-loss harvesting with real-time
 
 Users can review a holdings table, select assets to harvest, and immediately compare their current capital gains position against a projected after-harvesting outcome.
 
-## Preview
+## Live Demo
 
-![Tax Loss Harvester preview](./src/assets/hero.png)
+[View the deployed app](https://tax-harvester-seven.vercel.app/)
 
-## Demo
+## Run Locally
 
-There is no hosted demo yet, but the local development flow is quick:
+To start the project :
 
 ```bash
 npm install
@@ -196,16 +196,3 @@ These return in-memory mock data so the UI and tax calculation flow can be devel
 - Currency formatting currently uses `en-US` and `USD`
 - The app is frontend-only right now
 - There is no persistence or authentication yet
-
-## Future Improvements
-
-- Connect holdings and capital gains to a real API
-- Support partial sell amounts instead of full-position selection only
-- Add filters for gain and loss scenarios
-- Add unit tests for selector math
-- Add currency and locale switching
-- Add a deployed demo
-
-## License
-
-This project is currently unlicensed for public distribution. Add a license before publishing or open-sourcing it.
