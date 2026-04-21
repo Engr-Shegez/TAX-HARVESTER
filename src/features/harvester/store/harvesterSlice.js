@@ -2,9 +2,39 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   holdings: [],
+  capitalGains: {
+    stcg: {
+      profits: 0,
+      losses: 0,
+    },
+    ltcg: {
+      profits: 0,
+      losses: 0,
+    },
+  },
   selectedIds: [], //stores the "coin" symbol or a unique Id
   loading: false,
   error: null,
+};
+
+const buildTotalsFromCapitalGains = (capitalGains = {}) => {
+  const stProfit = Number(capitalGains?.stcg?.profits) || 0;
+  const stLoss = Number(capitalGains?.stcg?.losses) || 0;
+  const ltProfit = Number(capitalGains?.ltcg?.profits) || 0;
+  const ltLoss = Number(capitalGains?.ltcg?.losses) || 0;
+
+  const netST = stProfit - stLoss;
+  const netLT = ltProfit - ltLoss;
+
+  return {
+    stProfit,
+    stLoss,
+    ltProfit,
+    ltLoss,
+    netST,
+    netLT,
+    realizedGain: netST + netLT,
+  };
 };
 
 const harvesterSlice = createSlice({
@@ -20,6 +50,9 @@ const harvesterSlice = createSlice({
         state.holdings.some((holding) => holding.id === id),
       );
       state.loading = false;
+    },
+    setCapitalGains: (state, action) => {
+      state.capitalGains = action.payload;
     },
     setLoading: (state) => {
       state.loading = true;
@@ -44,6 +77,7 @@ const harvesterSlice = createSlice({
 
 export const {
   setHoldings,
+  setCapitalGains,
   setLoading,
   setError,
   toggleSelection,
@@ -54,35 +88,10 @@ export default harvesterSlice.reducer;
 // Selectors
 export const selectAllHoldings = (state) => state.harvester.holdings;
 export const selectSelectedIds = (state) => state.harvester.selectedIds;
+export const selectCapitalGains = (state) => state.harvester.capitalGains;
 
 export const selectedPreHarvestTotals = (state) => {
-  const holdings = state.harvester.holdings || [];
-
-  const totals = holdings.reduce(
-    (acc, curr) => {
-      const stGain = Number(curr?.stcg?.gain) || 0;
-      const ltGain = Number(curr?.ltcg?.gain) || 0;
-
-      acc.stProfit += stGain > 0 ? stGain : 0;
-      acc.stLoss += stGain < 0 ? Math.abs(stGain) : 0;
-
-      acc.ltProfit += ltGain > 0 ? ltGain : 0;
-      acc.ltLoss += ltGain < 0 ? Math.abs(ltGain) : 0;
-
-      return acc;
-    },
-    { stProfit: 0, stLoss: 0, ltProfit: 0, ltLoss: 0 },
-  );
-
-  const netST = totals.stProfit - totals.stLoss;
-  const netLT = totals.ltProfit - totals.ltLoss;
-
-  return {
-    ...totals,
-    netST,
-    netLT,
-    realizedGain: netST + netLT,
-  };
+  return buildTotalsFromCapitalGains(selectCapitalGains(state));
 };
 
 export const selectPostHarvestTotals = (state) => {

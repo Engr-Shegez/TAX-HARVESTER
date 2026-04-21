@@ -43,6 +43,20 @@ const formatAmount = (value) => {
   }).format(Number.isFinite(amount) ? amount : 0);
 };
 
+const ValuePair = ({
+  primary,
+  secondary,
+  primaryClassName = "text-slate-200",
+  secondaryClassName = "text-slate-400",
+}) => {
+  return (
+    <div className="space-y-1 text-right">
+      <p className={`font-mono text-sm ${primaryClassName}`}>{primary}</p>
+      <p className={`font-mono text-xs ${secondaryClassName}`}>{secondary}</p>
+    </div>
+  );
+};
+
 const SortButton = ({ columnKey, label, sortConfig, onSort, align = "left" }) => {
   const isActive = sortConfig.key === columnKey;
   const direction = isActive ? sortConfig.direction : null;
@@ -99,7 +113,7 @@ const HoldingsTable = ({ holdings }) => {
     return 0;
   });
 
-  const visibleHoldings = showAll ? sortedHoldings : sortedHoldings.slice(0, 8);
+  const visibleHoldings = showAll ? sortedHoldings : sortedHoldings.slice(0, 4);
   const allHoldingIds = sortedHoldings.map((item) => item.id);
   const allSelected =
     holdings.length > 0 && allHoldingIds.every((id) => selectedIds.includes(id));
@@ -241,31 +255,45 @@ const HoldingsTable = ({ holdings }) => {
                   </td>
 
                   <td className="px-6 py-4 text-right font-mono text-slate-200 text-sm">
-                    {formatCurrency(item.averageBuyPrice)}
+                    <ValuePair
+                      primary={formatAmount(item.totalHolding)}
+                      secondary={`${formatCurrency(item.averageBuyPrice)} ${item.coin}`}
+                      secondaryClassName="text-slate-500"
+                    />
                   </td>
 
                   <td className="px-6 py-4 text-right font-mono text-slate-200 text-sm">
                     {formatCurrency(item.currentPrice)}
                   </td>
 
-                  <td
-                    className={`px-6 py-4 text-right font-medium ${
-                      item.stcg.gain >= 0 ? "text-green-400" : "text-red-400"
-                    }`}
-                  >
-                    {formatCurrency(item.stcg.gain)}
+                  <td className="px-6 py-4">
+                    <ValuePair
+                      primary={formatCurrency(item.stcg.gain)}
+                      secondary={`${formatAmount(item.stcg.balance)} ${item.coin}`}
+                      primaryClassName={
+                        item.stcg.gain >= 0 ? "text-green-400" : "text-red-400"
+                      }
+                      secondaryClassName="text-slate-500"
+                    />
                   </td>
 
-                  <td
-                    className={`px-6 py-4 text-right font-medium ${
-                      item.ltcg.gain >= 0 ? "text-green-400" : "text-red-400"
-                    }`}
-                  >
-                    {formatCurrency(item.ltcg.gain)}
+                  <td className="px-6 py-4">
+                    <ValuePair
+                      primary={formatCurrency(item.ltcg.gain)}
+                      secondary={`${formatAmount(item.ltcg.balance)} ${item.coin}`}
+                      primaryClassName={
+                        item.ltcg.gain >= 0 ? "text-green-400" : "text-red-400"
+                      }
+                      secondaryClassName="text-slate-500"
+                    />
                   </td>
 
                   <td className="px-6 py-4 text-right font-mono text-slate-200 text-sm">
-                    {formatAmount(item.totalHolding)}
+                    {isSelected ? (
+                      formatAmount(item.totalHolding)
+                    ) : (
+                      <span className="text-slate-500">--</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -274,7 +302,7 @@ const HoldingsTable = ({ holdings }) => {
         </table>
       </div>
 
-      {holdings.length > 8 && (
+      {holdings.length > 4 && (
         <div className="p-4 border-t border-slate-800 text-center">
           <button
             type="button"

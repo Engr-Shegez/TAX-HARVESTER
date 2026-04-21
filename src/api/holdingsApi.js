@@ -401,6 +401,21 @@ const MOCK_HOLDINGS = [
   },
 ];
 
+const MOCK_CAPITAL_GAINS = {
+  stcg: {
+    profits: 70200.88,
+    losses: 1548.53,
+  },
+  ltcg: {
+    profits: 5020,
+    losses: 3050,
+  },
+};
+
 export const fetchHoldings = async () => {
   return MOCK_HOLDINGS;
+};
+
+export const fetchCapitalGains = async () => {
+  return MOCK_CAPITAL_GAINS;
 };

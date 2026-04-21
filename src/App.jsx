@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchHoldings } from "./api/holdingsApi";
+import { fetchCapitalGains, fetchHoldings } from "./api/holdingsApi";
 import {
   setHoldings,
+  setCapitalGains,
   setLoading,
   setError,
   selectAllHoldings,
@@ -28,8 +29,12 @@ const App = () => {
     const loadData = async () => {
       dispatch(setLoading());
       try {
-        const data = await fetchHoldings();
-        dispatch(setHoldings(data));
+        const [holdingsData, capitalGainsData] = await Promise.all([
+          fetchHoldings(),
+          fetchCapitalGains(),
+        ]);
+        dispatch(setHoldings(holdingsData));
+        dispatch(setCapitalGains(capitalGainsData));
       } catch (err) {
         dispatch(setError(err.message));
       }
