@@ -1,320 +1,226 @@
-import React, { useEffect, useRef, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  selectFilteredHoldings,
   selectSelectedIds,
   setSelectedIds,
   toggleSelection,
 } from "../store/harvesterSlice";
-import { formatCurrency } from "../../../utils/formatters";
+import {
+  formatCurrency,
+  formatDate,
+  formatNumber,
+  formatPercent,
+} from "../../../utils/formatters";
 
-const SORTABLE_COLUMNS = {
-  asset: {
-    label: "Asset",
-    getValue: (item) => `${item.coin} ${item.coinName}`.toLowerCase(),
-  },
-  averageBuyPrice: {
-    label: "Holding Avg Buy Price",
-    getValue: (item) => Number(item.averageBuyPrice) || 0,
-  },
-  currentPrice: {
-    label: "Current Price",
-    getValue: (item) => Number(item.currentPrice) || 0,
-  },
-  stGain: {
-    label: "Short Term Gain",
-    getValue: (item) => Number(item.stcg?.gain) || 0,
-  },
-  ltGain: {
-    label: "Long Term Gain",
-    getValue: (item) => Number(item.ltcg?.gain) || 0,
-  },
-  amountToSell: {
-    label: "Amount to Sell",
-    getValue: (item) => Number(item.totalHolding) || 0,
-  },
-};
+const ValuePair = ({ primary, secondary, tone = "neutral" }) => {
+  const toneClass =
+    tone === "gain"
+      ? "text-green-400"
+      : tone === "loss"
+        ? "text-red-400"
+        : "text-slate-100";
 
-const formatAmount = (value) => {
-  const amount = Number(value);
-
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
-  }).format(Number.isFinite(amount) ? amount : 0);
-};
-
-const ValuePair = ({
-  primary,
-  secondary,
-  primaryClassName = "text-slate-200",
-  secondaryClassName = "text-slate-400",
-}) => {
   return (
     <div className="space-y-1 text-right">
-      <p className={`font-mono text-sm ${primaryClassName}`}>{primary}</p>
-      <p className={`font-mono text-xs ${secondaryClassName}`}>{secondary}</p>
+      <p className={`font-mono text-sm font-semibold ${toneClass}`}>{primary}</p>
+      <p className="font-mono text-xs text-slate-500">{secondary}</p>
     </div>
   );
 };
 
-const SortButton = ({ columnKey, label, sortConfig, onSort, align = "left" }) => {
-  const isActive = sortConfig.key === columnKey;
-  const direction = isActive ? sortConfig.direction : null;
-  const iconClassName =
-    align === "right"
-      ? "inline-flex items-center justify-end gap-2 w-full"
-      : "inline-flex items-center gap-2";
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(columnKey)}
-      className={`${iconClassName} font-medium transition-colors hover:text-white`}
-    >
-      <span>{label}</span>
-      <span
-        className={`text-[10px] ${isActive ? "text-blue-400" : "text-slate-500"}`}
-        aria-hidden="true"
-      >
-        {direction === "asc" ? "^" : direction === "desc" ? "v" : "-"}
-      </span>
-    </button>
-  );
-};
-
-const HoldingsTable = ({ holdings }) => {
+const HoldingTable = () => {
   const dispatch = useDispatch();
+  const holdings = useSelector(selectFilteredHoldings);
   const selectedIds = useSelector(selectSelectedIds);
-  const [showAll, setShowAll] = useState(false);
-  const [sortConfig, setSortConfig] = useState({
-    key: "asset",
-    direction: "asc",
-  });
-  const selectAllRef = useRef(null);
+  const [expandedIds, setExpandedIds] = useState([]);
 
-  const sortedHoldings = [...holdings].sort((left, right) => {
-    const column = SORTABLE_COLUMNS[sortConfig.key];
-
-    if (!column) {
-      return 0;
-    }
-
-    const leftValue = column.getValue(left);
-    const rightValue = column.getValue(right);
-
-    if (leftValue < rightValue) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-
-    if (leftValue > rightValue) {
-      return sortConfig.direction === "asc" ? 1 : -1;
-    }
-
-    return 0;
-  });
-
-  const visibleHoldings = showAll ? sortedHoldings : sortedHoldings.slice(0, 4);
-  const allHoldingIds = sortedHoldings.map((item) => item.id);
+  const visibleLotIds = useMemo(
+    () => holdings.flatMap((holding) => holding.taxLots.map((lot) => lot.id)),
+    [holdings],
+  );
   const allSelected =
-    holdings.length > 0 && allHoldingIds.every((id) => selectedIds.includes(id));
-  const partiallySelected =
-    selectedIds.length > 0 && allHoldingIds.some((id) => selectedIds.includes(id)) && !allSelected;
+    visibleLotIds.length > 0 && visibleLotIds.every((id) => selectedIds.includes(id));
 
-  useEffect(() => {
-    if (selectAllRef.current) {
-      selectAllRef.current.indeterminate = partiallySelected;
-    }
-  }, [partiallySelected]);
-
-  const handleRowClick = (holdingId) => {
-    dispatch(toggleSelection(holdingId));
+  const handleSelectAll = () => {
+    dispatch(setSelectedIds(allSelected ? [] : visibleLotIds));
   };
 
-  const handleSort = (columnKey) => {
-    setSortConfig((currentSort) => ({
-      key: columnKey,
-      direction:
-        currentSort.key === columnKey && currentSort.direction === "asc"
-          ? "desc"
-          : "asc",
-    }));
+  const toggleExpanded = (holdingId) => {
+    setExpandedIds((current) =>
+      current.includes(holdingId)
+        ? current.filter((id) => id !== holdingId)
+        : [...current, holdingId],
+    );
   };
 
-  const handleSelectAllChange = () => {
-    dispatch(setSelectedIds(allSelected ? [] : allHoldingIds));
-  };
+  if (holdings.length === 0) {
+    return (
+      <div className="border border-slate-800 bg-slate-950 p-10 text-center">
+        <p className="text-sm font-semibold text-slate-200">No harvestable lots match the current filters.</p>
+        <p className="mt-1 text-sm text-slate-500">Try showing gains, dust balances, or another chain.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full">
+    <div className="overflow-hidden border border-slate-800 bg-slate-950">
+      <div className="flex flex-col gap-3 border-b border-slate-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-base font-bold text-slate-100">Holdings And Tax Lots</h2>
+          <p className="text-sm text-slate-500">Expand each asset to choose the exact acquisition lots to harvest.</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleSelectAll}
+          className="h-9 border border-slate-700 px-3 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white"
+        >
+          {allSelected ? "Clear visible lots" : `Select visible lots (${visibleLotIds.length})`}
+        </button>
+      </div>
+
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full min-w-[1080px] border-collapse text-left">
           <thead>
-            <tr className="text-slate-200 text-xs uppercase tracking-wider border-b border-slate-700">
-              <th className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <input
-                    ref={selectAllRef}
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={handleSelectAllChange}
-                    className="h-4 w-4 rounded border-slate-500 bg-slate-900 text-blue-500 accent-blue-500"
-                    aria-label={
-                      allSelected ? "Deselect all holdings" : "Select all holdings"
-                    }
-                  />
-                  <SortButton
-                    columnKey="asset"
-                    label={SORTABLE_COLUMNS.asset.label}
-                    sortConfig={sortConfig}
-                    onSort={handleSort}
-                  />
-                </div>
-              </th>
-              <th className="px-6 py-4 text-right">
-                <SortButton
-                  columnKey="averageBuyPrice"
-                  label={SORTABLE_COLUMNS.averageBuyPrice.label}
-                  sortConfig={sortConfig}
-                  onSort={handleSort}
-                  align="right"
-                />
-              </th>
-              <th className="px-6 py-4 text-right">
-                <SortButton
-                  columnKey="currentPrice"
-                  label={SORTABLE_COLUMNS.currentPrice.label}
-                  sortConfig={sortConfig}
-                  onSort={handleSort}
-                  align="right"
-                />
-              </th>
-              <th className="px-6 py-4 text-right">
-                <SortButton
-                  columnKey="stGain"
-                  label={SORTABLE_COLUMNS.stGain.label}
-                  sortConfig={sortConfig}
-                  onSort={handleSort}
-                  align="right"
-                />
-              </th>
-              <th className="px-6 py-4 text-right">
-                <SortButton
-                  columnKey="ltGain"
-                  label={SORTABLE_COLUMNS.ltGain.label}
-                  sortConfig={sortConfig}
-                  onSort={handleSort}
-                  align="right"
-                />
-              </th>
-              <th className="px-6 py-4 text-right">
-                <SortButton
-                  columnKey="amountToSell"
-                  label={SORTABLE_COLUMNS.amountToSell.label}
-                  sortConfig={sortConfig}
-                  onSort={handleSort}
-                  align="right"
-                />
-              </th>
+            <tr className="border-b border-slate-800 bg-slate-900/80 text-xs uppercase text-slate-400">
+              <th className="px-4 py-3">Asset / Lot</th>
+              <th className="px-4 py-3 text-right">Quantity</th>
+              <th className="px-4 py-3 text-right">Cost Basis</th>
+              <th className="px-4 py-3 text-right">Current Value</th>
+              <th className="px-4 py-3 text-right">Gain / Loss</th>
+              <th className="px-4 py-3">Term</th>
+              <th className="px-4 py-3">Source</th>
+              <th className="px-4 py-3 text-right">Harvest</th>
             </tr>
           </thead>
-
-          <tbody className="divide-y divide-slate-800">
-            {visibleHoldings.map((item) => {
-              const isSelected = selectedIds.includes(item.id);
+          <tbody className="divide-y divide-slate-900">
+            {holdings.map((holding) => {
+              const isExpanded = expandedIds.includes(holding.id);
+              const lots = holding.taxLots;
+              const selectedLots = lots.filter((lot) => selectedIds.includes(lot.id));
 
               return (
-                <tr
-                  key={item.id}
-                  onClick={() => handleRowClick(item.id)}
-                  className={`cursor-pointer transition-all duration-200 hover:bg-slate-800/80 ${
-                    isSelected ? "bg-blue-950/40 ring-1 ring-inset ring-blue-500/40" : ""
-                  }`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onClick={(event) => event.stopPropagation()}
-                        onChange={() => handleRowClick(item.id)}
-                        className="mt-0.5 h-4 w-4 rounded border-slate-500 bg-slate-900 text-blue-500 accent-blue-500"
-                        aria-label={`Select ${item.coin}`}
+                <Fragment key={holding.id}>
+                  <tr key={holding.id} className="bg-slate-900/45">
+                    <td className="px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(holding.id)}
+                        className="flex w-full items-center gap-3 text-left"
+                      >
+                        <span className="w-5 text-slate-500">{isExpanded ? "v" : ">"}</span>
+                        <img
+                          src={holding.logo}
+                          alt={holding.coin}
+                          className="h-8 w-8 rounded-full bg-slate-100"
+                        />
+                        <span>
+                          <span className="block font-bold text-slate-100">{holding.coin}</span>
+                          <span className="block max-w-64 truncate text-xs text-slate-500">
+                            {holding.coinName} - {holding.chain}
+                          </span>
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-4 py-4 text-right font-mono text-sm text-slate-200">
+                      {formatNumber(holding.totalHolding)}
+                    </td>
+                    <td className="px-4 py-4 text-right font-mono text-sm text-slate-300">
+                      {formatCurrency(holding.costBasis)}
+                    </td>
+                    <td className="px-4 py-4 text-right font-mono text-sm text-slate-300">
+                      {formatCurrency(holding.currentValue)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <ValuePair
+                        primary={formatCurrency(holding.unrealizedGain)}
+                        secondary={`${selectedLots.length}/${lots.length} lots selected`}
+                        tone={holding.unrealizedGain < 0 ? "loss" : "gain"}
                       />
-                      <img
-                        src={item.logo}
-                        alt={item.coin}
-                        className="w-8 h-8 rounded-full bg-slate-100"
-                      />
-                      <div>
-                        <p className="font-bold text-slate-200">{item.coin}</p>
-                        <p className="text-xs text-slate-400 truncate max-w-52">
-                          {item.coinName}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-400">{lots.length} lots</td>
+                    <td className="px-4 py-4 text-sm text-slate-400">{holding.source}</td>
+                    <td className="px-4 py-4 text-right text-sm text-slate-500">
+                      {selectedLots.length > 0
+                        ? formatCurrency(
+                            selectedLots.reduce((sum, lot) => sum + lot.currentValue, 0),
+                          )
+                        : "--"}
+                    </td>
+                  </tr>
 
-                  <td className="px-6 py-4 text-right font-mono text-slate-200 text-sm">
-                    <ValuePair
-                      primary={formatAmount(item.totalHolding)}
-                      secondary={`${formatCurrency(item.averageBuyPrice)} ${item.coin}`}
-                      secondaryClassName="text-slate-500"
-                    />
-                  </td>
+                  {isExpanded &&
+                    lots.map((lot) => {
+                      const isSelected = selectedIds.includes(lot.id);
 
-                  <td className="px-6 py-4 text-right font-mono text-slate-200 text-sm">
-                    {formatCurrency(item.currentPrice)}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <ValuePair
-                      primary={formatCurrency(item.stcg.gain)}
-                      secondary={`${formatAmount(item.stcg.balance)} ${item.coin}`}
-                      primaryClassName={
-                        item.stcg.gain >= 0 ? "text-green-400" : "text-red-400"
-                      }
-                      secondaryClassName="text-slate-500"
-                    />
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <ValuePair
-                      primary={formatCurrency(item.ltcg.gain)}
-                      secondary={`${formatAmount(item.ltcg.balance)} ${item.coin}`}
-                      primaryClassName={
-                        item.ltcg.gain >= 0 ? "text-green-400" : "text-red-400"
-                      }
-                      secondaryClassName="text-slate-500"
-                    />
-                  </td>
-
-                  <td className="px-6 py-4 text-right font-mono text-slate-200 text-sm">
-                    {isSelected ? (
-                      formatAmount(item.totalHolding)
-                    ) : (
-                      <span className="text-slate-500">--</span>
-                    )}
-                  </td>
-                </tr>
+                      return (
+                        <tr
+                          key={lot.id}
+                          onClick={() => dispatch(toggleSelection(lot.id))}
+                          className={`cursor-pointer transition hover:bg-slate-900 ${
+                            isSelected ? "bg-blue-950/50 ring-1 ring-inset ring-blue-500/40" : "bg-slate-950"
+                          }`}
+                        >
+                          <td className="px-4 py-4">
+                            <div className="ml-8 flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onClick={(event) => event.stopPropagation()}
+                                onChange={() => dispatch(toggleSelection(lot.id))}
+                                className="h-4 w-4 accent-blue-500"
+                                aria-label={`Select ${lot.coin} lot from ${lot.acquiredAt}`}
+                              />
+                              <div>
+                                <p className="text-sm font-semibold text-slate-200">
+                                  Acquired {formatDate(lot.acquiredAt)}
+                                </p>
+                                <p className="text-xs text-slate-500">{lot.heldDays} days held</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right font-mono text-sm text-slate-300">
+                            {formatNumber(lot.quantity)}
+                          </td>
+                          <td className="px-4 py-4">
+                            <ValuePair
+                              primary={formatCurrency(lot.costBasis)}
+                              secondary={`${formatCurrency(lot.costBasisPerUnit)} each`}
+                            />
+                          </td>
+                          <td className="px-4 py-4">
+                            <ValuePair
+                              primary={formatCurrency(lot.currentValue)}
+                              secondary={`${formatCurrency(lot.currentPrice)} market`}
+                            />
+                          </td>
+                          <td className="px-4 py-4">
+                            <ValuePair
+                              primary={formatCurrency(lot.unrealizedGain)}
+                              secondary={formatPercent(lot.lossPercent)}
+                              tone={lot.unrealizedGain < 0 ? "loss" : "gain"}
+                            />
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="border border-slate-700 px-2 py-1 text-xs font-semibold capitalize text-slate-300">
+                              {lot.holdingPeriod}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-slate-400">{lot.source}</td>
+                          <td className="px-4 py-4 text-right font-mono text-sm text-slate-300">
+                            {isSelected ? formatCurrency(lot.currentValue) : "--"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
-
-      {holdings.length > 4 && (
-        <div className="p-4 border-t border-slate-800 text-center">
-          <button
-            type="button"
-            onClick={() => setShowAll(!showAll)}
-            className="text-sm font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            {showAll ? "View Less" : `View All (${holdings.length})`}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
 
-export default HoldingsTable;
+export default HoldingTable;

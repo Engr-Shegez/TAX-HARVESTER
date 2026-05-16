@@ -8,7 +8,7 @@ const SavingsAlert = ({ preGain, postGain }) => {
   if (preGain <= postGain || savings <= 0) return null;
 
   return (
-    <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+    <div className="mt-4 flex items-center gap-3 rounded-md border border-green-500/20 bg-green-500/10 p-4 animate-in fade-in slide-in-from-top-2">
       <div className="bg-green-500 rounded-full p-1">
         <svg
           className="w-4 h-4 text-white"

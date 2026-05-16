@@ -7,7 +7,7 @@ const SummaryCard = ({ title, totals, isDark = false, children }) => {
 
   return (
     <div
-      className={`${bgColor} ${textColor} rounded-2xl p-6 shadow-xl border border-white/5`}
+      className={`${bgColor} ${textColor} rounded-md p-6 shadow-xl border border-white/5`}
     >
       <h3 className="text-sm font-medium uppercase tracking-wider mb-6 opacity-80">
         {title}
