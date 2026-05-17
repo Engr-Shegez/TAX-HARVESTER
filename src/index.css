@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-crypto-dark: #0f172a --color-harvest-blue: #1e40af;
 }
